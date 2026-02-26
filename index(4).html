@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>WORLDWATCH</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050a0f;--surface:#0a1520;--surface2:#0f1e2e;--border:#1a3a5c;--accent:#00d4ff;--text:#c8dff0;--muted:#4a7a9b;--conflict:#ff3860;--hotspot:#ff8c00;--sanction:#ffd700;--weather:#00d4ff;--outage:#cc44ff;--natural:#00ff88}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Barlow Condensed',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:3px;color:var(--accent);text-shadow:0 0 20px rgba(0,212,255,0.5)}
+.logo span{color:var(--text);opacity:.5}
+.live{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:2px;color:var(--natural);font-family:'Share Tech Mono',monospace}
+.dot{width:7px;height:7px;background:var(--natural);border-radius:50%;animation:pulse 1.5s infinite;box-shadow:0 0 8px var(--natural)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.htime{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted)}
+.stats-bar{display:flex;overflow-x:auto;background:var(--surface2);border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none}
+.stats-bar::-webkit-scrollbar{display:none}
+.stat{display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-right:1px solid var(--border);min-width:80px;flex-shrink:0}
+.sn{font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:bold;line-height:1}
+.sl{font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-top:2px;text-transform:uppercase}
+#mapWrap{flex:1;position:relative;overflow:hidden;background:#020810;touch-action:none;cursor:grab}
+#mapWrap:active{cursor:grabbing}
+#mc{position:absolute;top:0;left:0}
+.corner{position:absolute;width:20px;height:20px;border-color:var(--accent);border-style:solid;opacity:.4;pointer-events:none;z-index:10}
+.ctl{top:8px;left:8px;border-width:1px 0 0 1px}.ctr{top:8px;right:8px;border-width:1px 1px 0 0}
+.cbl{bottom:8px;left:8px;border-width:0 0 1px 1px}.cbr{bottom:8px;right:8px;border-width:0 1px 1px 0}
+.zd{position:absolute;bottom:10px;right:10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);background:rgba(5,10,15,.85);padding:4px 8px;border:1px solid var(--border);border-radius:2px;z-index:10;pointer-events:none}
+.zbtns{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:2px;z-index:10}
+.zbtn{width:32px;height:32px;background:rgba(10,21,32,0.92);border:1px solid var(--border);color:var(--text);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:3px;line-height:1;font-weight:200}
+.ipanel{position:absolute;bottom:10px;left:12px;right:52px;background:var(--surface);border:1px solid var(--border);border-radius:6px;z-index:20;padding:14px;display:none;box-shadow:0 4px 40px rgba(0,0,0,.9)}
+.ipanel.on{display:block;animation:su .2s ease}
+@keyframes su{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.ih{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.ibadge{font-size:9px;letter-spacing:2px;padding:2px 8px;border-radius:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace;display:inline-block;margin-bottom:4px}
+.ic{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.it{font-size:18px;font-weight:700;letter-spacing:1px;margin-bottom:3px}
+.im{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px}
+.id{font-size:13px;line-height:1.5;opacity:.85;border-top:1px solid var(--border);padding-top:8px}
+.svbar{display:flex;align-items:center;gap:8px;margin-top:8px}
+.svl{font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.svd{display:flex;gap:3px}
+.sd{width:10px;height:10px;border-radius:2px}
+.bottom{background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.lrow{display:flex;overflow-x:auto;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);scrollbar-width:none}
+.lrow::-webkit-scrollbar{display:none}
+.lbtn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:4px;border:1px solid transparent;background:var(--surface2);color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.ld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.lbtn.on[data-l="conflicts"]{border-color:#ff3860;color:#ff3860}
+.lbtn.on[data-l="hotspots"]{border-color:#ff8c00;color:#ff8c00}
+.lbtn.on[data-l="sanctions"]{border-color:#ffd700;color:#ffd700}
+.lbtn.on[data-l="weather"]{border-color:#00d4ff;color:#00d4ff}
+.lbtn.on[data-l="outages"]{border-color:#cc44ff;color:#cc44ff}
+.lbtn.on[data-l="natural"]{border-color:#00ff88;color:#00ff88}
+.crow{display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+.tbtns{display:flex;gap:4px}
+.tbtn{padding:4px 10px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer}
+.tbtn.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.rsel{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:11px;outline:none}
+.ticker{background:rgba(255,56,96,.08);border-top:1px solid rgba(255,56,96,.2);padding:6px 12px;display:flex;align-items:center;gap:8px;overflow:hidden}
+.tlabel{font-family:'Share Tech Mono',monospace;font-size:10px;color:#ff3860;letter-spacing:2px;flex-shrink:0;text-shadow:0 0 10px #ff3860}
+.twrap{overflow:hidden;flex:1}
+.ttext{font-size:11px;color:var(--text);white-space:nowrap;display:inline-block;animation:tk 50s linear infinite}
+@keyframes tk{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">WORLD<span>/</span>WATCH</div>
+  <div class="live"><div class="dot"></div>LIVE</div>
+  <div class="htime" id="clk">--:-- UTC</div>
+</header>
+<div class="stats-bar">
+  <div class="stat"><div class="sn" style="color:#ff3860" id="stat-conflicts">--</div><div class="sl">Conflicts</div></div>
+  <div class="stat"><div class="sn" style="color:#ff8c00" id="stat-hotspots">--</div><div class="sl">Hotspots</div></div>
+  <div class="stat"><div class="sn" style="color:#ffd700" id="stat-sanctions">--</div><div class="sl">Sanctions</div></div>
+  <div class="stat"><div class="sn" style="color:#00d4ff" id="stat-weather">--</div><div class="sl">Weather</div></div>
+  <div class="stat"><div class="sn" style="color:#cc44ff" id="stat-outages">--</div><div class="sl">Outages</div></div>
+  <div class="stat"><div class="sn" style="color:#00ff88" id="stat-natural">--</div><div class="sl">Natural</div></div>
+</div>
+<div style="background:#050a0f;border-bottom:1px solid #1a3a5c;padding:4px 12px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:#4a7a9b;" id="dataStatus">⟳ INITIALISING...</div>
+<div id="mapWrap">
+  <canvas id="mc"></canvas>
+  <div id="mapStatus" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Share Tech Mono',monospace;font-size:12px;color:#4a7a9b;letter-spacing:2px;z-index:5;pointer-events:none;">LOADING MAP DATA...</div>
+  <div class="corner ctl"></div><div class="corner ctr"></div>
+  <div class="corner cbl"></div><div class="corner cbr"></div>
+  <div class="zd" id="zd">ZOOM 1.0x</div>
+  <div class="zbtns">
+    <button class="zbtn" onclick="doZoom(1)">+</button>
+    <button class="zbtn" onclick="doZoom(-1)">−</button>
+  </div>
+  <div class="ipanel" id="ip">
+    <div class="ih">
+      <div><div class="ibadge" id="ibadge"></div><div class="it" id="ititle"></div><div class="im" id="imeta"></div></div>
+      <button class="ic" onclick="closeInfo()">✕</button>
+    </div>
+    <div class="id" id="idesc"></div>
+    <div class="svbar"><div class="svl">SEVERITY</div><div class="svd" id="isvd"></div></div>
+  </div>
+</div>
+<div class="bottom">
+  <div class="lrow">
+    <button class="lbtn on" data-l="conflicts" onclick="tgl(this)"><div class="ld" style="background:#ff3860"></div>Conflicts</button>
+    <button class="lbtn on" data-l="hotspots" onclick="tgl(this)"><div class="ld" style="background:#ff8c00"></div>Hotspots</button>
+    <button class="lbtn on" data-l="sanctions" onclick="tgl(this)"><div class="ld" style="background:#ffd700"></div>Sanctions</button>
+    <button class="lbtn on" data-l="weather" onclick="tgl(this)"><div class="ld" style="background:#00d4ff"></div>Weather</button>
+    <button class="lbtn on" data-l="outages" onclick="tgl(this)"><div class="ld" style="background:#cc44ff"></div>Outages</button>
+    <button class="lbtn on" data-l="natural" onclick="tgl(this)"><div class="ld" style="background:#00ff88"></div>Natural</button>
+  </div>
+  <div class="crow">
+    <div class="tbtns">
+      <button class="tbtn" onclick="st(this)">24H</button>
+      <button class="tbtn on" onclick="st(this)">7D</button>
+      <button class="tbtn" onclick="st(this)">30D</button>
+      <button class="tbtn" onclick="st(this)">90D</button>
+    </div>
+    <select class="rsel" onchange="flyTo(this.value)">
+      <option value="world">🌍 GLOBAL</option>
+      <option value="mena">MENA</option>
+      <option value="europe">EUROPE</option>
+      <option value="apac">APAC</option>
+      <option value="americas">AMERICAS</option>
+      <option value="africa">AFRICA</option>
+    </select>
+  </div>
+  <div class="ticker">
+    <div class="tlabel">⚡ ALERT</div>
+    <div class="twrap"><div class="ttext" id="tickerText">⚔ Ukraine frontline: heavy exchanges 2h ago &nbsp;///&nbsp; 🌪 Cat-3 storm Gulf of Mexico, landfall 72h &nbsp;///&nbsp; ⚡ Ukraine grid: 2.3M without power &nbsp;///&nbsp; 🔒 EU 14th sanctions: 200+ designations &nbsp;///&nbsp; 🌋 Japan M6.2 — tsunami watch issued &nbsp;///&nbsp; 🔥 Taiwan Strait: PLA exercises ongoing</div></div>
+  </div>
+</div>
+<script>
+
+// ════════════════════════════════════════════════════════════════════
+//  WORLDWATCH · Live Intelligence Feed
+//  Data source: GDELT Project (gdeltproject.org) — free, no key needed
+//
+//  GDELT APIs used:
+//   • DOC 2.0  – article search with geo coords  (api.gdeltproject.org)
+//   • GEO 2.0  – location-aware event stream      (api.gdeltproject.org)
+//
+//  Static layers (no real-time free API exists):
+//   • Sanctions, Hotspots, Outages
+// ════════════════════════════════════════════════════════════════════
+
+window.EVTS = [];
+
+// ── Helpers ────────────────────────────────────────────────────────
+function timeAgo(ts) {
+  if(!ts) return 'recent';
+  // GDELT seendate format: "20260222120000" or ISO
+  let d;
+  if(typeof ts === 'string' && ts.length === 14) {
+    d = new Date(ts.slice(0,4)+'-'+ts.slice(4,6)+'-'+ts.slice(6,8)+'T'+ts.slice(8,10)+':'+ts.slice(10,12)+':'+ts.slice(12,14)+'Z');
+  } else {
+    d = new Date(ts);
+  }
+  const diff = (Date.now() - d) / 1000;
+  if(isNaN(diff) || diff < 0) return 'just now';
+  if(diff < 3600) return Math.round(diff/60) + 'm ago';
+  if(diff < 86400) return Math.round(diff/3600) + 'h ago';
+  return Math.round(diff/86400) + 'd ago';
+}
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('dataStatus');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? '#00ff88' : ok === false ? '#ff3860' : '#4a7a9b';
+}
+
+function updateStats() {
+  const c = {conflicts:0,hotspots:0,sanctions:0,weather:0,outages:0,natural:0};
+  (window.EVTS||[]).forEach(e => { if(c[e.t]!==undefined) c[e.t]++; });
+  ['conflicts','hotspots','sanctions','weather','outages','natural'].forEach(k => {
+    const el = document.getElementById('stat-'+k);
+    if(el) el.textContent = c[k];
+  });
+}
+
+function updateTicker() {
+  const hi = (window.EVTS||[]).filter(e => e.sv >= 4).slice(0,10);
+  const el = document.getElementById('tickerText');
+  if(el && hi.length) el.textContent = hi.map(e => e.ti + ' — ' + e.lo).join('   ///   ');
+}
+
+// ── Category classifier from GDELT themes/tone ─────────────────────
+// GDELT returns CAMEO event codes and theme strings
+const CONFLICT_THEMES = ['TERROR','REBEL','MILITARY','ECON_BANKRUPTCY','PROTEST','ARMEDCONFLICT',
+  'KILL','ATTACK','ARMED','WAR','BOMBING','SHOOTING','EXPLOSION','FIGHTING','COUP'];
+const WEATHER_THEMES = ['NATURAL_DISASTER','FLOOD','DROUGHT','HURRICANE','TYPHOON',
+  'EARTHQUAKE','TSUNAMI','TORNADO','CYCLONE','WILDFIRE','VOLCANO'];
+const OUTAGE_THEMES = ['CYBER','BLACKOUT','INFRASTRUCTURE','POWER','GRID','INTERNET','CABLE'];
+
+
+// ── Severity from tone ────────────────────────────────────────────
+function toneToSv(tone) {
+  if(tone <= -15) return 5;
+  if(tone <= -10) return 4;
+  if(tone <=  -5) return 3;
+  return 2;
+}
+
+// ── Generic fetch with timeout (no AbortController — Android compat) ──
+function fetchJSON(url, timeoutMs=15000) {
+  const fetchPromise = fetch(url).then(r => {
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), timeoutMs)
+  );
+  return Promise.race([fetchPromise, timeoutPromise]);
+}
+
+// ── GDELT via allorigins.win CORS proxy ───────────────────────────
+// allorigins wraps any URL and adds Access-Control-Allow-Origin: *
+// Response shape: { contents: "<json string>", status: {...} }
+const GDELT_URLS = [
+  'https://api.allorigins.win/get?url=https%3A//api.gdeltproject.org/api/v2/doc/doc%3Fquery%3D%2528war%2520OR%2520attack%2520OR%2520airstrike%2520OR%2520offensive%2520OR%2520fighting%2520OR%2520bombing%2520OR%2520killed%2520OR%2520wounded%2520OR%2520ceasefire%2520OR%2520troops%2529%2520sourcelang%253Aenglish%26mode%3Dartlist%26maxrecords%3D75%26format%3Djson%26timespan%3D1440%26sort%3Dtonedesc',
+  'https://api.allorigins.win/get?url=https%3A//api.gdeltproject.org/api/v2/doc/doc%3Fquery%3D%2528coup%2520OR%2520protest%2520OR%2520crackdown%2520OR%2520rebel%2520OR%2520militant%2520OR%2520invasion%2520OR%2520explosion%2520OR%2520terrorist%2529%2520sourcelang%253Aenglish%26mode%3Dartlist%26maxrecords%3D60%26format%3Djson%26timespan%3D1440%26sort%3Dtonedesc'
+];
+
+async function loadGDELT(proxyUrl) {
+  const resp = await fetchJSON(proxyUrl, 20000);
+  // allorigins wraps the response in { contents: "..." }
+  const raw = typeof resp.contents === 'string' ? JSON.parse(resp.contents) : resp;
+  if(!raw || !raw.articles) return [];
+
+  const seen = new Set();
+  const events = [];
+
+  for(const a of raw.articles) {
+    if(!a.title) continue;
+
+    let lat = parseFloat(a.latitude);
+    let lng = parseFloat(a.longitude);
+    if(isNaN(lat) || isNaN(lng) || (lat===0 && lng===0)) {
+      const loc = geoFromText(a.title + ' ' + (a.sourcecountry||''));
+      if(!loc) continue;
+      lat = loc.lat; lng = loc.lng;
+    }
+
+    const key = `${Math.round(lat/1.5)},${Math.round(lng/1.5)}`;
+    if(seen.has(key)) continue;
+    seen.add(key);
+
+    const tone = parseFloat(a.tone) || 0;
+    const title = (a.title||'').toLowerCase();
+    let t = 'conflicts';
+    if(/flood|cyclone|earthquake|tsunami|volcano|wildfire|hurricane|typhoon|tornado/.test(title)) t = 'natural';
+    else if(/cyber|blackout|outage|power cut|cable cut/.test(title)) t = 'outages';
+    else if(/sanction|embargo|export ban/.test(title)) t = 'sanctions';
+
+    events.push({
+      t, sv: toneToSv(tone),
+      lat: lat + (Math.random()-0.5)*0.6,
+      lng: lng + (Math.random()-0.5)*0.6,
+      ti: a.title.length > 72 ? a.title.slice(0,69)+'\u2026' : a.title,
+      lo: a.sourcecountry || geoFromText(a.title)?.name || 'Unknown',
+      tm: timeAgo(a.seendate),
+      de: `${a.domain||'news'} \u00b7 Tone: ${tone.toFixed(1)} \u00b7 ${a.title}`,
+      src: 'GDELT', url: a.url||null
+    });
+  }
+  return events;
+}
+
+// ── USGS Earthquakes M4.5+ ────────────────────────────────────────
+async function loadUSGS() {
+  const data = await fetchJSON('https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=4.5&orderby=time&limit=60', 15000);
+  return (data.features||[]).map(f => {
+    const p = f.properties;
+    const [lng, lat, depth] = f.geometry.coordinates;
+    const mag = p.mag || 0;
+    return {
+      t: 'natural', sv: mag>=7?5 : mag>=6?4 : mag>=5?3 : 2,
+      lat, lng,
+      ti: `M${mag.toFixed(1)} \u2014 ${(p.place||'Unknown').slice(0,55)}`,
+      lo: p.place || 'Unknown',
+      tm: timeAgo(new Date(p.time).toISOString()),
+      de: `Magnitude ${mag.toFixed(1)} earthquake at ${depth?.toFixed(0)||'?'}km depth. ${p.tsunami ? '\u26a0 Tsunami watch issued.' : 'No tsunami warning.'}`,
+      src: 'USGS'
+    };
+  });
+}
+
+// ── ReliefWeb (UN OCHA) — ongoing disasters ───────────────────────
+async function loadReliefWeb() {
+  const url = 'https://api.reliefweb.int/v1/disasters?appname=worldwatch&limit=30&profile=full&filter[field]=status&filter[value]=ongoing';
+  const data = await fetchJSON(url, 15000);
+  if(!data || !data.data) return [];
+  return data.data.map(d => {
+    const f = d.fields;
+    const country = (f.country||[])[0];
+    if(!country) return null;
+    const loc = geoFromText((country.name||'') + ' ' + (f.name||''));
+    if(!loc) return null;
+    const types = (f.type||[]).map(t=>t.name||'').join(', ');
+    const isWeather = /flood|cyclone|storm|hurricane|typhoon|drought/.test(types.toLowerCase());
+    const isQuake = /earthquake|tsunami/.test(types.toLowerCase());
+    return {
+      t: isQuake ? 'natural' : isWeather ? 'weather' : 'natural',
+      sv: 3,
+      lat: loc.lat + (Math.random()-0.5)*1.5,
+      lng: loc.lng + (Math.random()-0.5)*1.5,
+      ti: (f.name||'Disaster').slice(0,72),
+      lo: country.name || loc.name,
+      tm: f.date?.event ? timeAgo(f.date.event) : 'ongoing',
+      de: `UN OCHA ReliefWeb · ${types} · ${country.name}. Status: ongoing.`,
+      src: 'ReliefWeb'
+    };
+  }).filter(Boolean);
+}
+
+// ── Static baseline ────────────────────────────────────────────────
+const STATIC_EVENTS = [
+  {t:'sanctions',lat:55.75,lng:37.60,ti:'Russia \u2014 EU/US/UK Sanctions',lo:'Russia',tm:'active',de:'14th EU package. 2,000+ designations across energy, finance and defence.',sv:5,src:'static'},
+  {t:'sanctions',lat:35.70,lng:51.40,ti:'Iran \u2014 Nuclear Sanctions',lo:'Iran',tm:'active',de:'JCPOA breakdown sanctions. Oil exports targeted. SWIFT exclusions.',sv:4,src:'static'},
+  {t:'sanctions',lat:39.90,lng:116.4,ti:'China \u2014 US Tech Controls',lo:'China',tm:'active',de:'BIS Entity List: 200+ firms. Semiconductor export controls.',sv:3,src:'static'},
+  {t:'sanctions',lat:38.90,lng:125.7,ti:'DPRK \u2014 Weapons Sanctions',lo:'North Korea',tm:'active',de:'UN SC comprehensive sanctions. Ballistic missile program.',sv:4,src:'static'},
+  {t:'sanctions',lat:15.60,lng:32.50,ti:'Sudan \u2014 Arms Embargo',lo:'Sudan',tm:'active',de:'Darfur arms embargo. RSF/SAF leadership designations.',sv:3,src:'static'},
+  {t:'hotspots',lat:23.00,lng:120.5,ti:'Taiwan Strait \u2014 PLA Activity',lo:'Taiwan Strait',tm:'ongoing',de:'Regular ADIZ incursions. Naval exercises. US carrier group deployed.',sv:4,src:'static'},
+  {t:'hotspots',lat:25.00,lng:56.50,ti:'Strait of Hormuz',lo:'Persian Gulf',tm:'ongoing',de:'20% of global oil supply. Iranian naval harassment ongoing.',sv:4,src:'static'},
+  {t:'hotspots',lat:35.50,lng:36.50,ti:'Syria \u2014 Post-HTS Transition',lo:'Syria',tm:'ongoing',de:'HTS governance fragile. Turkish/US/Israeli forces active.',sv:3,src:'static'},
+  {t:'hotspots',lat:55.00,lng:24.00,ti:'Baltic \u2014 NATO Eastern Flank',lo:'Baltic States',tm:'ongoing',de:'Heightened readiness. Russian hybrid ops. Cable threats.',sv:3,src:'static'},
+  {t:'hotspots',lat:14.00,lng:-2.00,ti:'Sahel \u2014 Coup Belt',lo:'West Africa',tm:'ongoing',de:'Mali, Burkina Faso, Niger under military rule. AQ/ISIS expansion.',sv:4,src:'static'},
+  {t:'outages',lat:51.50,lng:31.00,ti:'Ukraine Grid \u2014 Strike Damage',lo:'Ukraine',tm:'ongoing',de:'Russian strikes on energy infrastructure. Rolling blackouts. 6M+ affected.',sv:5,src:'static'},
+  {t:'outages',lat:5.50,lng:-0.20,ti:'West Africa \u2014 Submarine Cables',lo:'West Africa',tm:'recent',de:'Multiple cable cuts. 13 nations impacted. Bandwidth at 35%.',sv:4,src:'static'},
+  {t:'outages',lat:24.00,lng:54.00,ti:'Gulf Region \u2014 Cyber Ops',lo:'Gulf Region',tm:'recent',de:'State-sponsored intrusions targeting energy SCADA systems.',sv:3,src:'static'},
+];
+
+// ── Master loader ──────────────────────────────────────────────────
+let loadCount = 0;
+
+async function loadAllData() {
+  loadCount++;
+  setStatus('\u27f3 FETCHING LIVE DATA...');
+
+  const live = [];
+  const errors = [];
+  const sources = [];
+
+  await Promise.allSettled([
+    // GDELT conflict news via CORS proxy
+    loadGDELT(GDELT_URLS[0])
+      .then(r => { live.push(...r); if(r.length) sources.push(`GDELT(${r.length})`); })
+      .catch(e => errors.push('GDELT-1:'+e.message)),
+
+    loadGDELT(GDELT_URLS[1])
+      .then(r => { live.push(...r); if(r.length) sources.push(`GDELT2(${r.length})`); })
+      .catch(e => errors.push('GDELT-2:'+e.message)),
+
+    // USGS earthquakes — native CORS
+    loadUSGS()
+      .then(r => { live.push(...r); if(r.length) sources.push(`USGS(${r.length})`); })
+      .catch(e => errors.push('USGS:'+e.message)),
+
+    // ReliefWeb disasters — native CORS
+    loadReliefWeb()
+      .then(r => { live.push(...r); if(r.length) sources.push(`ReliefWeb(${r.length})`); })
+      .catch(e => errors.push('RW:'+e.message)),
+  ]);
+
+  // Deduplicate live events by 1.5° grid
+  const grid = new Set();
+  const deduped = live.filter(e => {
+    const k = `${Math.round(e.lat/1.5)},${Math.round(e.lng/1.5)}`;
+    if(grid.has(k)) return false;
+    grid.add(k); return true;
+  });
+
+  window.EVTS = [...STATIC_EVENTS, ...deduped];
+  window.LAST_UPDATED = new Date();
+  updateStats();
+  updateTicker();
+
+  const utc = window.LAST_UPDATED.toUTCString().slice(17,22);
+  if(deduped.length > 0) {
+    setStatus(`\u2713 ${window.EVTS.length} EVENTS (${deduped.length} LIVE: ${sources.join(', ')}) \u00b7 ${utc} UTC`, true);
+  } else {
+    setStatus(`\u26a0 LIVE FEEDS UNAVAILABLE \u2014 BASELINE ONLY \u00b7 ${errors.join(' | ')}`, false);
+  }
+  console.log('[WW] Load #' + loadCount, '| live:', deduped.length, '| errors:', errors);
+}
+
+loadAllData();
+setInterval(loadAllData, 5 * 60 * 1000);
+
+
+
+// ── World map TopoJSON ─────────────────────────────────────────────
+window.GEO_FEATURES = [];
+
+function loadTopoJSON(url) {
+  return fetch(url).then(r => r.json()).then(topo => {
+    const obj = topo.objects.countries;
+    const sc2 = topo.transform.scale, tr = topo.transform.translate;
+    function decodeArc(i) {
+      const rev = i < 0, pts = topo.arcs[rev ? ~i : i];
+      let x=0, y=0;
+      const d = pts.map(p => { x+=p[0]; y+=p[1]; return [x*sc2[0]+tr[0], y*sc2[1]+tr[1]]; });
+      return rev ? d.reverse() : d;
+    }
+    function stitch(idxs) { return idxs.flatMap(decodeArc); }
+    window.GEO_FEATURES = obj.geometries.map(g => {
+      if(g.type==='Polygon') return {geometry:{type:'Polygon',coordinates:g.arcs.map(stitch)}};
+      if(g.type==='MultiPolygon') return {geometry:{type:'MultiPolygon',coordinates:g.arcs.map(p=>p.map(stitch))}};
+      return null;
+    }).filter(Boolean);
+    document.getElementById('mapStatus').style.display='none';
+  });
+}
+
+(async()=>{
+  for(const url of [
+    'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json',
+    'https://unpkg.com/world-atlas@2/countries-50m.json'
+  ]){
+    try { await loadTopoJSON(url); if(window.GEO_FEATURES.length) break; } catch(e){}
+  }
+  if(!window.GEO_FEATURES.length)
+    document.getElementById('mapStatus').textContent = '⚠ Map data unavailable';
+})();
+
+const COL={conflicts:'#ff3860',hotspots:'#ff8c00',sanctions:'#ffd700',weather:'#00d4ff',outages:'#cc44ff',natural:'#00ff88'};
+const ICO={conflicts:'\u2694\ufe0f',hotspots:'\ud83d\udd25',sanctions:'\ud83d\udd12',weather:'\ud83c\udf2a\ufe0f',outages:'\u26a1',natural:'\ud83c\udf0b'};
+
+// UTC clock
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clk').textContent=
+    String(n.getUTCHours()).padStart(2,'0')+':'+
+    String(n.getUTCMinutes()).padStart(2,'0')+':'+
+    String(n.getUTCSeconds()).padStart(2,'0')+' UTC';
+},1000);
+
+// --- MAP ENGINE ---
+const canvas=document.getElementById('mc');
+const ctx=canvas.getContext('2d');
+const wrap=document.getElementById('mapWrap');
+
+// State: scale = pixels per degree longitude
+let sc=1.0, px=0, py=0;
+let W=0, H=0;
+let activeL={conflicts:true,hotspots:true,sanctions:true,weather:true,outages:true,natural:true};
+
+// Mercator: convert lng/lat to canvas x/y
+// sc = px per degree longitude; R = px per radian (for Mercator Y)
+function R(){ return sc*180/Math.PI; }
+function toX(lng){ return lng*sc + px + W/2; }
+function toY(lat){
+  const rad=lat*Math.PI/180;
+  const m=Math.log(Math.tan(Math.PI/4+rad/2));
+  return H/2 - m*R() + py;
+}
+// Inverse
+function toLng(x){ return (x - W/2 - px)/sc; }
+function toLat(y){
+  const m=(H/2+py-y)/R();
+  return (2*Math.atan(Math.exp(m))-Math.PI/2)*180/Math.PI;
+}
+
+function resize(){
+  W=wrap.clientWidth; H=wrap.clientHeight;
+  canvas.width=W; canvas.height=H;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  // Fit world in BOTH dimensions — use whichever axis is tighter
+  // Width fit: 360deg * sc = W * 0.95
+  const scW = W/360*0.95;
+  // Height fit: Mercator span ±75° = 2*ln(tan(π/4+75°/2)) radians * R
+  // where R = sc*180/π, so sc_H = H / (2*ln(tan(π/4+75°/2)) * 180/π)
+  const lat75 = 75*Math.PI/180;
+  const mercH = 2*Math.log(Math.tan(Math.PI/4+lat75/2));
+  const scH = H / (mercH * 180/Math.PI);
+  sc = Math.min(scW, scH) * 0.97;
+  px = 0;
+  // Vertically center at lat 10° (slight north bias — more landmass above equator)
+  const lat10 = 10*Math.PI/180;
+  const m10 = Math.log(Math.tan(Math.PI/4+lat10/2));
+  py = -m10*(sc*180/Math.PI);
+}
+
+function draw(){
+  // Background - ocean
+  ctx.fillStyle='#030f1e';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle='rgba(26,58,92,0.35)';
+  ctx.lineWidth=0.5;
+  // Only draw visible grid lines
+  const lngMin=toLng(0)-10, lngMax=toLng(W)+10;
+  const latMin=toLat(H)-10, latMax=toLat(0)+10;
+  for(let lng=Math.ceil(lngMin/30)*30; lng<=lngMax; lng+=30){
+    ctx.beginPath(); ctx.moveTo(toX(lng),0); ctx.lineTo(toX(lng),H); ctx.stroke();
+  }
+  for(let lat=Math.ceil(latMin/30)*30; lat<=Math.min(latMax,85); lat+=30){
+    ctx.beginPath(); ctx.moveTo(0,toY(lat)); ctx.lineTo(W,toY(lat)); ctx.stroke();
+  }
+
+  // Countries
+  ctx.fillStyle='#0e2236';
+  ctx.strokeStyle='#1f4060';
+  ctx.lineWidth=0.8;
+  (window.GEO_FEATURES||[]).forEach(feature => {
+    const geom = feature.geometry;
+    if(!geom) return;
+    const rings = geom.type === 'Polygon' ? geom.coordinates :
+                  geom.type === 'MultiPolygon' ? geom.coordinates.flat(1) : [];
+    rings.forEach(ring => {
+      if(ring.length<2) return;
+      // Skip if entirely off screen
+      let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+      ring.forEach(([lng,lat])=>{
+        const x=toX(lng),y=toY(lat);
+        if(x<minX)minX=x; if(x>maxX)maxX=x;
+        if(y<minY)minY=y; if(y>maxY)maxY=y;
+      });
+      if(maxX<-10||minX>W+10||maxY<-10||minY>H+10) return;
+      ctx.beginPath();
+      ring.forEach(([lng,lat],i)=>{
+        const x=toX(lng),y=toY(lat);
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    });
+  });
+
+  // Equator
+  ctx.strokeStyle='rgba(0,212,255,0.15)';
+  ctx.lineWidth=1;
+  ctx.setLineDash([5,10]);
+  ctx.beginPath(); ctx.moveTo(0,toY(0)); ctx.lineTo(W,toY(0)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Markers
+  const t=Date.now()/1000;
+  (window.EVTS||[]).forEach(e=>{
+    if(!activeL[e.t]) return;
+    const x=toX(e.lng), y=toY(e.lat);
+    if(x<-20||x>W+20||y<-20||y>H+20) return;
+    const col=COL[e.t];
+    const r=e.sv>=5?12:e.sv>=4?9:7;
+
+    // Pulse ring
+    if(e.sv>=4){
+      const ph=(t%2.5)/2.5;
+      const alpha=Math.round((1-ph)*160).toString(16).padStart(2,'0');
+      ctx.beginPath(); ctx.arc(x,y,r*(1+ph*2),0,Math.PI*2);
+      ctx.strokeStyle=col+alpha; ctx.lineWidth=1.5; ctx.stroke();
+    }
+
+    // Glow halo
+    const g=ctx.createRadialGradient(x,y,0,x,y,r*3);
+    g.addColorStop(0,col+'55'); g.addColorStop(1,col+'00');
+    ctx.beginPath(); ctx.arc(x,y,r*3,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+
+    // Filled marker
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=col+'30'; ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
+
+    // Icon
+    ctx.font=`${Math.max(10,r*1.4)}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(ICO[e.t],x,y);
+  });
+
+  document.getElementById('zd').textContent='ZOOM '+sc.toFixed(1)+'x';
+}
+
+// Animation loop
+// draw loop started in init()
+
+// --- INPUT HANDLING ---
+let dragging=false, lastX=0, lastY=0, hasMoved=false;
+let touchStart={x:0,y:0}, touchMoved=false, pinchDist=0;
+
+// Mouse
+wrap.addEventListener('mousedown',e=>{
+  dragging=true; lastX=e.clientX; lastY=e.clientY; hasMoved=false;
+});
+window.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  if(Math.abs(dx)+Math.abs(dy)>3) hasMoved=true;
+  px+=dx; py+=dy; lastX=e.clientX; lastY=e.clientY;
+});
+window.addEventListener('mouseup',e=>{
+  if(dragging&&!hasMoved){
+    const r=wrap.getBoundingClientRect();
+    handleTap(e.clientX-r.left, e.clientY-r.top);
+  }
+  dragging=false;
+});
+
+// Touch
+wrap.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(e.touches.length===2){
+    pinchDist=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY);
+  } else {
+    touchStart={x:e.touches[0].clientX, y:e.touches[0].clientY};
+    lastX=touchStart.x; lastY=touchStart.y; touchMoved=false;
+  }
+},{passive:false});
+
+wrap.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===2){
+    const d=Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY);
+    const cx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    const cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    const r=wrap.getBoundingClientRect();
+    zoomAt(cx-r.left, cy-r.top, d/pinchDist);
+    pinchDist=d; touchMoved=true;
+  } else {
+    const dx=e.touches[0].clientX-lastX;
+    const dy=e.touches[0].clientY-lastY;
+    if(Math.abs(dx)+Math.abs(dy)>3) touchMoved=true;
+    px+=dx; py+=dy;
+    lastX=e.touches[0].clientX; lastY=e.touches[0].clientY;
+  }
+},{passive:false});
+
+wrap.addEventListener('touchend',e=>{
+  if(!touchMoved){
+    const r=wrap.getBoundingClientRect();
+    handleTap(touchStart.x-r.left, touchStart.y-r.top);
+  }
+});
+
+// Scroll wheel
+wrap.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=wrap.getBoundingClientRect();
+  zoomAt(e.clientX-r.left, e.clientY-r.top, e.deltaY<0?1.12:0.89);
+},{passive:false});
+
+function zoomAt(mx,my,factor){
+  const lng=toLng(mx), lat=toLat(my);
+  sc=Math.max(0.5, Math.min(30, sc*factor));
+  px=mx-W/2-lng*sc;
+  const rad=lat*Math.PI/180;
+  const m=Math.log(Math.tan(Math.PI/4+rad/2));
+  py=my-H/2+m*R();
+}
+
+function doZoom(dir){ zoomAt(W/2,H/2,dir>0?1.3:0.77); }
+
+// Tap / click
+function handleTap(mx,my){
+  let hit=null, best=9999;
+  (window.EVTS||[]).forEach(e=>{
+    if(!activeL[e.t]) return;
+    const dx=mx-toX(e.lng), dy=my-toY(e.lat);
+    const d=Math.sqrt(dx*dx+dy*dy);
+    const hitR=(e.sv>=5?12:e.sv>=4?9:7)+10;
+    if(d<hitR&&d<best){ best=d; hit=e; }
+  });
+  if(hit) showInfo(hit);
+  else closeInfo();
+}
+
+function showInfo(e){
+  const col=COL[e.t];
+  const b=document.getElementById('ibadge');
+  b.textContent=e.t.toUpperCase();
+  b.style.cssText=`background:${col}22;color:${col};border:1px solid ${col}55;padding:2px 8px;border-radius:2px;font-size:9px;letter-spacing:2px;font-family:'Share Tech Mono',monospace;display:inline-block;margin-bottom:4px`;
+  document.getElementById('ititle').textContent=e.ti;
+  document.getElementById('imeta').textContent='\ud83d\udccd '+e.lo+'  \u00b7  \ud83d\udd50 '+e.tm;
+  document.getElementById('idesc').textContent=e.de;
+  let dots='';
+  for(let i=1;i<=5;i++)
+    dots+=`<div class="sd" style="background:${i<=e.sv?col:'#1a3a5c'};${i<=e.sv?'box-shadow:0 0 6px '+col:''}"></div>`;
+  document.getElementById('isvd').innerHTML=dots;
+  document.getElementById('ip').classList.add('on');
+}
+function closeInfo(){ document.getElementById('ip').classList.remove('on'); }
+
+// Layer toggle
+function tgl(b){ b.classList.toggle('on'); activeL[b.dataset.l]=b.classList.contains('on'); }
+function st(b){ document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('on')); b.classList.add('on'); }
+
+// Regions [centerLat, centerLng, scaleMultiplier of base]
+const REGIONS={
+  world:[20,0,1.0],
+  mena:[25,42,3.5],
+  europe:[54,15,4.5],
+  apac:[15,115,2.5],
+  americas:[10,-80,2.0],
+  africa:[5,22,2.8]
+};
+
+function flyTo(r){
+  const [clat,clng,mult]=REGIONS[r]||REGIONS.world;
+  const base=W/360*0.95;
+  const targetSc=base*mult;
+  // Target pan: center on clat/clng
+  const rad=clat*Math.PI/180;
+  const m=Math.log(Math.tan(Math.PI/4+rad/2));
+  const targetPx=-clng*targetSc;
+  const targetR=targetSc*180/Math.PI;
+  const targetPy=m*targetR - H*0.07;
+  // Animate
+  const s0=sc, px0=px, py0=py;
+  let p=0;
+  (function anim(){
+    p=Math.min(1,p+0.05);
+    const k=p<.5?2*p*p:(4-2*p)*p-1; // ease in-out
+    sc=s0+(targetSc-s0)*k;
+    px=px0+(targetPx-px0)*k;
+    py=py0+(targetPy-py0)*k;
+    if(p<1) requestAnimationFrame(anim);
+  })();
+}
+
+// Init — wait for DOM to fully render before sizing canvas
+function init() {
+  resize();
+  // Kick off continuous render loop
+  function loop() { draw(); requestAnimationFrame(loop); }
+  loop();
+}
+
+window.addEventListener('resize', () => { resize(); });
+
+// Use DOMContentLoaded + small rAF delay to ensure layout is complete
+if(document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(init));
+} else {
+  requestAnimationFrame(init);
+}
+
+
+
+
+</script>
+</body>
+</html>
